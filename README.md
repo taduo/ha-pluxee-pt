@@ -13,19 +13,20 @@ This project is not affiliated with or endorsed by Pluxee.
 - Refreshes your balance on a configurable interval, with 30 minutes as the default
 - Lets you change the refresh interval from the integration options
 - Automatically retries with a fresh login when the session expires
+- Adds the latest 5 card transactions as attributes on the balance sensor
 - Installs through HACS as a custom repository
 
 ## Current Scope
 
-Version `0.1.0` focuses on one thing only:
+Version `0.3.0` currently includes:
 
 - available balance from the Portugal consumer portal
+- last 5 card transactions as balance sensor attributes
+- configurable refresh interval from the options flow
 
 Out of scope for now:
 
-- transactions or statement history
 - multiple balance types from one account
-- options flow
 - default HACS catalog submission
 
 ## Installation
@@ -58,6 +59,11 @@ The integration will create one sensor per configured account:
 
 - `Available balance`
 
+That sensor also exposes these attributes:
+
+- `recent_transactions`
+- `recent_transactions_count`
+
 ## Options
 
 After the integration is added, you can change the refresh interval from the
@@ -80,7 +86,8 @@ The current implementation is based on the live Portugal login flow observed on
 - request parameters: `nif` and `pass`
 
 If Pluxee adds CAPTCHA, mandatory one-time codes, or changes the post-login
-markup, the integration may need to be updated.
+markup, the integration may need to be updated. Transaction parsing currently
+uses the same authenticated dashboard HTML fetch as the balance parser.
 
 ## Local Validation
 

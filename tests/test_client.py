@@ -1,13 +1,16 @@
 """Unit tests for the Pluxee Portugal client helpers."""
 
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
 from custom_components.pluxee_pt.client import (
     PluxeePtParseError,
     extract_balance_data,
+    extract_recent_transactions,
     is_login_page,
+    parse_decimal_text,
     parse_login_response_text,
     title_for_nif,
 )
@@ -31,6 +34,32 @@ LOGIN_HTML = """
   <input name="pass" />
 </form>
 """
+
+BROKEN_TRANSACTIONS_HTML = """
+<html>
+  <body>
+    <main>
+      <div class="card">
+        <h1 class="card-heading demi-bold">43,09&nbsp;</h1>
+      </div>
+      <table id="plx-table">
+        <tbody>
+          <tr>
+            <td><p class="dateFormatDesk">not-a-date</p></td>
+            <td><p class="text-left">Compra TESTE</p></td>
+            <td><span class="saldo_p">-31.08 €</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
+"""
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+DASHBOARD_HTML = (FIXTURES_DIR / "dashboard_with_transactions.html").read_text(
+    encoding="utf-8"
+)
 
 
 def test_parse_login_response_text_supports_plain_json() -> None:
@@ -59,6 +88,48 @@ def test_extract_balance_data_returns_decimal_value() -> None:
 
     assert result.balance == Decimal("74.17")
     assert result.balance_raw == "74,17"
+    assert result.recent_transactions == ()
+
+
+def test_parse_decimal_text_supports_balance_and_transaction_formats() -> None:
+    """The numeric parser accepts both observed separators."""
+    assert parse_decimal_text("74,17") == Decimal("74.17")
+    assert parse_decimal_text("-31.08 €") == Decimal("-31.08")
+
+
+def test_extract_recent_transactions_returns_newest_five_rows() -> None:
+    """The dashboard parser keeps the newest visible order and caps at five rows."""
+    result = extract_recent_transactions(DASHBOARD_HTML)
+
+    assert len(result) == 5
+    assert result[0].date == "2026-04-08"
+    assert result[0].date_raw == "08/04/2026"
+    assert result[0].description == "Compra MERCADONA,SINTRA,PRT"
+    assert result[0].amount == Decimal("-31.08")
+    assert result[0].amount_raw == "-31.08 €"
+    assert result[3].description == "Carregamento de FORTINET PORTUGAL, UNIPESSOAL LDA"
+    assert result[3].amount == Decimal("152.60")
+
+
+def test_extract_balance_data_includes_recent_transactions() -> None:
+    """The combined dashboard parser returns balance and transaction data together."""
+    result = extract_balance_data(DASHBOARD_HTML, "https://consumidores.pluxee.pt/")
+
+    assert result.balance == Decimal("43.09")
+    assert result.balance_raw == "43,09"
+    assert len(result.recent_transactions) == 5
+    assert result.recent_transactions[4].date == "2026-03-08"
+
+
+def test_extract_balance_data_keeps_balance_when_transactions_fail() -> None:
+    """A transaction parsing problem should not hide a valid balance."""
+    result = extract_balance_data(
+        BROKEN_TRANSACTIONS_HTML,
+        "https://consumidores.pluxee.pt/",
+    )
+
+    assert result.balance == Decimal("43.09")
+    assert result.recent_transactions == ()
 
 
 def test_extract_balance_data_raises_when_missing() -> None:

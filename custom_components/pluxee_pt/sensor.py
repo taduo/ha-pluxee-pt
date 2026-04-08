@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
+from typing import Any
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CURRENCY_EURO
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -10,8 +16,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import PluxeePtRuntimeData
-from .const import BALANCE_PAGE_URL, CONF_NIF, DOMAIN, SENSOR_KEY_AVAILABLE_BALANCE
+from .const import (
+    BALANCE_PAGE_URL,
+    CONF_NIF,
+    DOMAIN,
+    SENSOR_KEY_AVAILABLE_BALANCE,
+)
 from .coordinator import PluxeePtDataUpdateCoordinator
+from .presentation import build_balance_attributes
 
 
 async def async_setup_entry(
@@ -21,9 +33,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensor platform."""
     runtime_data: PluxeePtRuntimeData = entry.runtime_data
-    async_add_entities(
-        [PluxeeAvailableBalanceSensor(runtime_data.coordinator, entry)],
-    )
+    async_add_entities([PluxeeAvailableBalanceSensor(runtime_data.coordinator, entry)])
 
 
 class PluxeeBaseEntity(
@@ -76,9 +86,6 @@ class PluxeeAvailableBalanceSensor(PluxeeBaseEntity):
         return self.coordinator.data.balance
 
     @property
-    def extra_state_attributes(self) -> dict[str, str]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional metadata for the card."""
-        return {
-            "balance_text": self.coordinator.data.balance_raw,
-            "source_url": self.coordinator.data.source_url,
-        }
+        return build_balance_attributes(self.coordinator.data)
