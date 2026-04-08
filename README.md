@@ -97,12 +97,21 @@ From the repository root:
 PYTHONPYCACHEPREFIX=.pycache python3 -m compileall custom_components tests
 ```
 
-If you want to run the test suite later:
+If you want to run the test suite locally, use a project-only virtual environment so
+the installs stay inside this repository and do not affect your other Python work.
+Local validation expects Python 3.12 or newer.
 
 ```bash
-python3 -m pip install -r requirements_test.txt
-python3 -m pytest
+python3.12 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements_test.txt
+python -m pytest
+deactivate
 ```
+
+Home Assistant installs the runtime dependency declared in
+`custom_components/pluxee_pt/manifest.json` inside its own environment, so you do
+not need to install that package globally on your machine.
 
 ## Legal
 

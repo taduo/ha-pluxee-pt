@@ -22,5 +22,4 @@ def build_balance_attributes(data: PluxeeBalanceData) -> dict[str, Any]:
             for transaction in data.recent_transactions
         ],
         "recent_transactions_count": len(data.recent_transactions),
-        "source_url": data.source_url,
     }

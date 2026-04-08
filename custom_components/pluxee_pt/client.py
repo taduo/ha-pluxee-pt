@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from datetime import datetime
 import json
 import logging
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
@@ -24,6 +25,12 @@ _LOGGER = logging.getLogger(__name__)
 _BALANCE_PATTERN = re.compile(r"[-+]?\d[\d.,]*")
 _TRANSACTION_DATE_FORMAT = "%d/%m/%Y"
 _TRANSACTION_LIMIT = 5
+_ALLOWED_PORTAL_HOSTS = frozenset(
+    {
+        urlparse(LOGIN_PAGE_URL).netloc,
+        urlparse(BALANCE_PAGE_URL).netloc,
+    }
+)
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -111,6 +118,28 @@ def parse_login_response_text(payload: str) -> PluxeeLoginResponse:
         message=data.get("mensagem"),
         redirect_url=data.get("local"),
     )
+
+
+def resolve_post_login_url(redirect_url: str | None) -> str:
+    """Validate and normalize the post-login destination."""
+    if not redirect_url:
+        return BALANCE_PAGE_URL
+
+    resolved_url = urljoin(LOGIN_PAGE_URL, redirect_url.strip())
+    parsed = urlparse(resolved_url)
+
+    if parsed.scheme != "https" or parsed.netloc not in _ALLOWED_PORTAL_HOSTS:
+        raise PluxeePtParseError(
+            "Pluxee login redirected to an unexpected destination."
+        )
+
+    return resolved_url
+
+
+def sanitize_url(url: str) -> str:
+    """Strip query and fragment data before storing or logging a URL."""
+    parsed = urlparse(url)
+    return parsed._replace(query="", fragment="").geturl()
 
 
 def parse_decimal_text(raw_value: str) -> Decimal:
@@ -252,7 +281,7 @@ class PluxeePtClient:
                 or "Pluxee rejected the credentials provided for this account."
             )
 
-        target_url = login_result.redirect_url or BALANCE_PAGE_URL
+        target_url = resolve_post_login_url(login_result.redirect_url)
         html, source_url = await self._async_fetch_page(target_url)
 
         if is_login_page(html):
@@ -312,7 +341,7 @@ class PluxeePtClient:
                 )
 
             text = await response.text()
-            final_url = str(response.url)
+            final_url = sanitize_url(str(response.url))
 
         _LOGGER.debug("Fetched Pluxee page %s", final_url)
         return text, final_url

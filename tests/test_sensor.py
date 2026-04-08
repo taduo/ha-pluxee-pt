@@ -34,7 +34,7 @@ def test_build_balance_attributes_includes_recent_transactions() -> None:
 
     assert attributes["balance_text"] == "43,09"
     assert attributes["recent_transactions_count"] == 2
-    assert attributes["source_url"] == "https://consumidores.pluxee.pt/"
+    assert "source_url" not in attributes
     assert attributes["recent_transactions"] == [
         {
             "date": "2026-04-08",

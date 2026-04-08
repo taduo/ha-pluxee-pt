@@ -12,8 +12,11 @@ from custom_components.pluxee_pt.client import (
     is_login_page,
     parse_decimal_text,
     parse_login_response_text,
+    resolve_post_login_url,
+    sanitize_url,
     title_for_nif,
 )
+from custom_components.pluxee_pt.const import BALANCE_PAGE_URL
 
 
 BALANCE_HTML = """
@@ -80,6 +83,37 @@ def test_parse_login_response_text_supports_jsonp() -> None:
 
     assert result.success is False
     assert result.message == "invalid"
+
+
+def test_resolve_post_login_url_defaults_to_balance_page() -> None:
+    """Missing redirect targets should fall back to the balance page."""
+    assert resolve_post_login_url(None) == BALANCE_PAGE_URL
+
+
+def test_resolve_post_login_url_accepts_expected_hosts() -> None:
+    """Only known Pluxee hosts should be followed after login."""
+    assert (
+        resolve_post_login_url("https://consumidores.pluxee.pt/dashboard?token=abc")
+        == "https://consumidores.pluxee.pt/dashboard?token=abc"
+    )
+    assert (
+        resolve_post_login_url("/area-reservada")
+        == "https://portal.admin.pluxee.pt/area-reservada"
+    )
+
+
+def test_resolve_post_login_url_rejects_unexpected_hosts() -> None:
+    """The client should not follow arbitrary redirect destinations."""
+    with pytest.raises(PluxeePtParseError):
+        resolve_post_login_url("https://evil.example.com/steal-session")
+
+
+def test_sanitize_url_removes_query_and_fragment() -> None:
+    """URLs stored for diagnostics should not keep sensitive parts."""
+    assert (
+        sanitize_url("https://consumidores.pluxee.pt/dashboard?token=abc#fragment")
+        == "https://consumidores.pluxee.pt/dashboard"
+    )
 
 
 def test_extract_balance_data_returns_decimal_value() -> None:
