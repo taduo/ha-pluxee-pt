@@ -30,6 +30,17 @@
       "wrong_account": "A reautenticação tem de usar o mesmo NIF."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Pluxee Portugal",
+        "description": "Escolha a frequência com que o Home Assistant deve atualizar o saldo Pluxee.",
+        "data": {
+          "update_interval_minutes": "Intervalo de atualização"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "available_balance": {

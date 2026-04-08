@@ -10,7 +10,8 @@ This project is not affiliated with or endorsed by Pluxee.
 
 - UI-based setup from `Settings > Devices & Services`
 - Stores your credentials in the Home Assistant config entry
-- Refreshes your balance every 30 minutes
+- Refreshes your balance on a configurable interval, with 30 minutes as the default
+- Lets you change the refresh interval from the integration options
 - Automatically retries with a fresh login when the session expires
 - Installs through HACS as a custom repository
 
@@ -56,6 +57,18 @@ Out of scope for now:
 The integration will create one sensor per configured account:
 
 - `Available balance`
+
+## Options
+
+After the integration is added, you can change the refresh interval from the
+integration options in Home Assistant.
+
+Available presets:
+
+- `15 minutes`
+- `30 minutes`
+- `60 minutes`
+- `120 minutes`
 
 ## Notes About Login
 

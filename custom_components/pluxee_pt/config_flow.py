@@ -7,8 +7,9 @@ import logging
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
 
@@ -19,7 +20,14 @@ from .client import (
     PluxeePtParseError,
     title_for_nif,
 )
-from .const import CONF_NIF, DOMAIN
+from .const import (
+    CONF_NIF,
+    CONF_UPDATE_INTERVAL_MINUTES,
+    DEFAULT_UPDATE_INTERVAL_MINUTES,
+    DOMAIN,
+    UPDATE_INTERVAL_OPTION_LABELS,
+    normalize_update_interval_minutes,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -151,4 +159,48 @@ class PluxeePtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 ),
             }
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return PluxeePtOptionsFlowHandler()
+
+
+class PluxeePtOptionsFlowHandler(config_entries.OptionsFlowWithReload):
+    """Handle the options flow for Pluxee Portugal."""
+
+    async def async_step_init(
+        self,
+        user_input: dict[str, str] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Manage integration options."""
+        if user_input is not None:
+            return self.async_create_entry(
+                data={
+                    CONF_UPDATE_INTERVAL_MINUTES: normalize_update_interval_minutes(
+                        user_input[CONF_UPDATE_INTERVAL_MINUTES]
+                    )
+                }
+            )
+
+        current_interval = normalize_update_interval_minutes(
+            self.config_entry.options.get(
+                CONF_UPDATE_INTERVAL_MINUTES,
+                DEFAULT_UPDATE_INTERVAL_MINUTES,
+            )
+        )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_UPDATE_INTERVAL_MINUTES,
+                        default=str(current_interval),
+                    ): vol.In(UPDATE_INTERVAL_OPTION_LABELS)
+                }
+            ),
         )
