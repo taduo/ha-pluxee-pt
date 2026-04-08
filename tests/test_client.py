@@ -2,10 +2,14 @@
 
 from decimal import Decimal
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
 from custom_components.pluxee_pt.client import (
+    PluxeeLoginResponse,
+    PluxeePtAuthError,
+    PluxeePtClient,
     PluxeePtParseError,
     extract_balance_data,
     extract_recent_transactions,
@@ -16,7 +20,7 @@ from custom_components.pluxee_pt.client import (
     sanitize_url,
     title_for_nif,
 )
-from custom_components.pluxee_pt.const import BALANCE_PAGE_URL
+from custom_components.pluxee_pt.const import BALANCE_PAGE_URL, is_valid_nif, normalize_nif
 
 
 BALANCE_HTML = """
@@ -116,9 +120,21 @@ def test_sanitize_url_removes_query_and_fragment() -> None:
     )
 
 
+def test_normalize_nif_strips_outer_whitespace() -> None:
+    """NIF values should be normalized before storage or comparison."""
+    assert normalize_nif(" 123456789 ") == "123456789"
+
+
+def test_is_valid_nif_requires_exactly_nine_digits() -> None:
+    """Only 9-digit numeric NIFs should be accepted."""
+    assert is_valid_nif("123456789") is True
+    assert is_valid_nif("1234 56789") is False
+    assert is_valid_nif("12345678") is False
+
+
 def test_extract_balance_data_returns_decimal_value() -> None:
     """The page parser normalizes comma decimals into Decimal."""
-    result = extract_balance_data(BALANCE_HTML, "https://consumidores.pluxee.pt/")
+    result = extract_balance_data(BALANCE_HTML)
 
     assert result.balance == Decimal("74.17")
     assert result.balance_raw == "74,17"
@@ -147,7 +163,7 @@ def test_extract_recent_transactions_returns_newest_five_rows() -> None:
 
 def test_extract_balance_data_includes_recent_transactions() -> None:
     """The combined dashboard parser returns balance and transaction data together."""
-    result = extract_balance_data(DASHBOARD_HTML, "https://consumidores.pluxee.pt/")
+    result = extract_balance_data(DASHBOARD_HTML)
 
     assert result.balance == Decimal("43.09")
     assert result.balance_raw == "43,09"
@@ -157,10 +173,7 @@ def test_extract_balance_data_includes_recent_transactions() -> None:
 
 def test_extract_balance_data_keeps_balance_when_transactions_fail() -> None:
     """A transaction parsing problem should not hide a valid balance."""
-    result = extract_balance_data(
-        BROKEN_TRANSACTIONS_HTML,
-        "https://consumidores.pluxee.pt/",
-    )
+    result = extract_balance_data(BROKEN_TRANSACTIONS_HTML)
 
     assert result.balance == Decimal("43.09")
     assert result.recent_transactions == ()
@@ -169,7 +182,7 @@ def test_extract_balance_data_keeps_balance_when_transactions_fail() -> None:
 def test_extract_balance_data_raises_when_missing() -> None:
     """Unexpected markup should be treated as a parse failure."""
     with pytest.raises(PluxeePtParseError):
-        extract_balance_data("<html><body>No balance here</body></html>", "https://x")
+        extract_balance_data("<html><body>No balance here</body></html>")
 
 
 def test_is_login_page_detects_login_markup() -> None:
@@ -180,4 +193,25 @@ def test_is_login_page_detects_login_markup() -> None:
 
 def test_title_for_nif_masks_display_name() -> None:
     """Only the last four digits are shown in the UI title."""
-    assert title_for_nif("123456789") == "Pluxee PT 6789"
+    assert title_for_nif(" 123456789 ") == "Pluxee PT 6789"
+
+
+@pytest.mark.asyncio
+async def test_async_fetch_balance_uses_generic_auth_error() -> None:
+    """Auth failures should not expose upstream response messages."""
+    client = PluxeePtClient(object(), "123456789", "secret")
+    client._async_fetch_page = AsyncMock(return_value=LOGIN_HTML)
+    client._async_prime_session = AsyncMock()
+    client._async_login = AsyncMock(
+        return_value=PluxeeLoginResponse(
+            success=False,
+            message="Conta bloqueada 123456789",
+            redirect_url=None,
+        )
+    )
+
+    with pytest.raises(PluxeePtAuthError) as exc_info:
+        await client.async_fetch_balance()
+
+    assert str(exc_info.value) == "Pluxee rejected the credentials provided for this account."
+    assert "Conta bloqueada" not in str(exc_info.value)

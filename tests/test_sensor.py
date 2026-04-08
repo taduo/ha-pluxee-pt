@@ -27,7 +27,6 @@ def test_build_balance_attributes_includes_recent_transactions() -> None:
                 amount_raw="152.60 €",
             ),
         ),
-        source_url="https://consumidores.pluxee.pt/",
     )
 
     attributes = build_balance_attributes(data)

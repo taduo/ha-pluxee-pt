@@ -18,6 +18,7 @@ from .const import (
     LOGIN_PAGE_URL,
     LOGIN_PROCESSING_URL,
     REQUEST_TIMEOUT_SECONDS,
+    normalize_nif,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 _BALANCE_PATTERN = re.compile(r"[-+]?\d[\d.,]*")
 _TRANSACTION_DATE_FORMAT = "%d/%m/%Y"
 _TRANSACTION_LIMIT = 5
+_AUTH_FAILURE_MESSAGE = "Pluxee rejected the credentials provided for this account."
 _ALLOWED_PORTAL_HOSTS = frozenset(
     {
         urlparse(LOGIN_PAGE_URL).netloc,
@@ -67,7 +69,6 @@ class PluxeeBalanceData:
 
     balance: Decimal
     balance_raw: str
-    source_url: str
     recent_transactions: tuple["PluxeeTransaction", ...] = ()
 
 
@@ -84,7 +85,8 @@ class PluxeeTransaction:
 
 def title_for_nif(nif: str) -> str:
     """Build a user-friendly config entry title."""
-    masked = nif[-4:] if len(nif) >= 4 else nif
+    normalized_nif = normalize_nif(nif)
+    masked = normalized_nif[-4:] if len(normalized_nif) >= 4 else normalized_nif
     return f"Pluxee PT {masked}"
 
 
@@ -223,7 +225,7 @@ def extract_recent_transactions(
     return tuple(transactions)
 
 
-def extract_balance_data(html: str, source_url: str) -> PluxeeBalanceData:
+def extract_balance_data(html: str) -> PluxeeBalanceData:
     """Extract the available balance and recent transactions from the dashboard."""
     soup = BeautifulSoup(html, "html.parser")
     recent_transactions: tuple[PluxeeTransaction, ...] = ()
@@ -249,7 +251,6 @@ def extract_balance_data(html: str, source_url: str) -> PluxeeBalanceData:
             balance=balance,
             balance_raw=raw_balance,
             recent_transactions=recent_transactions,
-            source_url=source_url,
         )
 
     raise PluxeePtParseError(
@@ -263,33 +264,30 @@ class PluxeePtClient:
     def __init__(self, session: "ClientSession", nif: str, password: str) -> None:
         """Initialize the client."""
         self._session = session
-        self._nif = nif
+        self._nif = normalize_nif(nif)
         self._password = password
 
     async def async_fetch_balance(self) -> PluxeeBalanceData:
         """Fetch the current balance, logging in again if needed."""
-        html, source_url = await self._async_fetch_page(BALANCE_PAGE_URL)
+        html = await self._async_fetch_page(BALANCE_PAGE_URL)
         if not is_login_page(html):
-            return extract_balance_data(html, source_url)
+            return extract_balance_data(html)
 
         await self._async_prime_session()
         login_result = await self._async_login()
 
         if not login_result.success:
-            raise PluxeePtAuthError(
-                login_result.message
-                or "Pluxee rejected the credentials provided for this account."
-            )
+            raise PluxeePtAuthError(_AUTH_FAILURE_MESSAGE)
 
         target_url = resolve_post_login_url(login_result.redirect_url)
-        html, source_url = await self._async_fetch_page(target_url)
+        html = await self._async_fetch_page(target_url)
 
         if is_login_page(html):
             raise PluxeePtAuthError(
                 "Pluxee accepted the login request but did not create an authenticated session."
             )
 
-        return extract_balance_data(html, source_url)
+        return extract_balance_data(html)
 
     async def _async_prime_session(self) -> None:
         """Fetch the login page first so any required cookies are set."""
@@ -319,9 +317,11 @@ class PluxeePtClient:
 
             return parse_login_response_text(await response.text())
 
-    async def _async_fetch_page(self, url: str) -> tuple[str, str]:
+    async def _async_fetch_page(self, url: str) -> str:
         """Fetch an HTML page from the portal."""
         from aiohttp import ClientError
+
+        safe_url = sanitize_url(url)
 
         try:
             response = await self._session.get(
@@ -331,7 +331,7 @@ class PluxeePtClient:
             )
         except ClientError as err:
             raise PluxeePtConnectionError(
-                f"Could not reach the Pluxee portal at {url}."
+                f"Could not reach the Pluxee portal at {safe_url}."
             ) from err
 
         async with response:
@@ -344,4 +344,4 @@ class PluxeePtClient:
             final_url = sanitize_url(str(response.url))
 
         _LOGGER.debug("Fetched Pluxee page %s", final_url)
-        return text, final_url
+        return text

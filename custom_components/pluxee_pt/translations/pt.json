@@ -22,6 +22,7 @@
       "cannot_connect": "Falha ao ligar ao portal Pluxee.",
       "cannot_parse": "O login funcionou, mas não foi possível encontrar o saldo disponível na página.",
       "invalid_auth": "NIF ou palavra-passe inválidos.",
+      "invalid_nif_format": "O NIF tem de conter exatamente 9 dígitos.",
       "unknown": "Erro inesperado."
     },
     "abort": {

@@ -22,6 +22,7 @@
       "cannot_connect": "Failed to connect to the Pluxee portal.",
       "cannot_parse": "Signed in successfully, but could not find the available balance on the page.",
       "invalid_auth": "Invalid NIF or password.",
+      "invalid_nif_format": "NIF must contain exactly 9 digits.",
       "unknown": "Unexpected error."
     },
     "abort": {

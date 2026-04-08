@@ -26,10 +26,20 @@ from .const import (
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
     UPDATE_INTERVAL_OPTION_LABELS,
+    is_valid_nif,
+    normalize_nif,
     normalize_update_interval_minutes,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def normalize_credentials(user_input: dict[str, str]) -> dict[str, str]:
+    """Normalize user-provided credentials without altering the password."""
+    return {
+        CONF_NIF: normalize_nif(user_input[CONF_NIF]),
+        CONF_PASSWORD: user_input[CONF_PASSWORD],
+    }
 
 
 async def async_validate_input(
@@ -51,6 +61,7 @@ class PluxeePtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Pluxee Portugal."""
 
     VERSION = 1
+    MINOR_VERSION = 2
 
     _reauth_entry: config_entries.ConfigEntry | None = None
 
@@ -62,22 +73,30 @@ class PluxeePtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            try:
-                await self.async_set_unique_id(user_input[CONF_NIF])
-                self._abort_if_unique_id_configured()
+            normalized_data = normalize_credentials(user_input)
 
-                info = await async_validate_input(self.hass, user_input)
-            except PluxeePtAuthError:
-                errors["base"] = "invalid_auth"
-            except PluxeePtConnectionError:
-                errors["base"] = "cannot_connect"
-            except PluxeePtParseError:
-                errors["base"] = "cannot_parse"
-            except Exception:
-                _LOGGER.exception("Unexpected error while validating Pluxee credentials")
-                errors["base"] = "unknown"
+            if not is_valid_nif(normalized_data[CONF_NIF]):
+                errors["base"] = "invalid_nif_format"
             else:
-                return self.async_create_entry(title=info["title"], data=user_input)
+                try:
+                    await self.async_set_unique_id(normalized_data[CONF_NIF])
+                    self._abort_if_unique_id_configured()
+
+                    info = await async_validate_input(self.hass, normalized_data)
+                except PluxeePtAuthError:
+                    errors["base"] = "invalid_auth"
+                except PluxeePtConnectionError:
+                    errors["base"] = "cannot_connect"
+                except PluxeePtParseError:
+                    errors["base"] = "cannot_parse"
+                except Exception:
+                    _LOGGER.exception("Unexpected error while validating Pluxee credentials")
+                    errors["base"] = "unknown"
+                else:
+                    return self.async_create_entry(
+                        title=info["title"],
+                        data=normalized_data,
+                    )
 
         return self.async_show_form(
             step_id="user",
@@ -109,28 +128,33 @@ class PluxeePtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="unknown")
 
         if user_input is not None and CONF_PASSWORD in user_input:
-            data = {
-                CONF_NIF: user_input[CONF_NIF],
-                CONF_PASSWORD: user_input[CONF_PASSWORD],
-            }
+            data = normalize_credentials(user_input)
 
-            try:
-                await self.async_set_unique_id(data[CONF_NIF])
-                self._abort_if_unique_id_mismatch(reason="wrong_account")
-                await async_validate_input(self.hass, data)
-            except PluxeePtAuthError:
-                errors["base"] = "invalid_auth"
-            except PluxeePtConnectionError:
-                errors["base"] = "cannot_connect"
-            except PluxeePtParseError:
-                errors["base"] = "cannot_parse"
-            except Exception:
-                _LOGGER.exception("Unexpected error while reauthenticating Pluxee credentials")
-                errors["base"] = "unknown"
+            if not is_valid_nif(data[CONF_NIF]):
+                errors["base"] = "invalid_nif_format"
             else:
-                self.hass.config_entries.async_update_entry(entry, data=data)
-                await self.hass.config_entries.async_reload(entry.entry_id)
-                return self.async_abort(reason="reauth_successful")
+                try:
+                    await self.async_set_unique_id(data[CONF_NIF])
+                    self._abort_if_unique_id_mismatch(reason="wrong_account")
+                    await async_validate_input(self.hass, data)
+                except PluxeePtAuthError:
+                    errors["base"] = "invalid_auth"
+                except PluxeePtConnectionError:
+                    errors["base"] = "cannot_connect"
+                except PluxeePtParseError:
+                    errors["base"] = "cannot_parse"
+                except Exception:
+                    _LOGGER.exception("Unexpected error while reauthenticating Pluxee credentials")
+                    errors["base"] = "unknown"
+                else:
+                    self.hass.config_entries.async_update_entry(
+                        entry,
+                        data=data,
+                        title=title_for_nif(data[CONF_NIF]),
+                        unique_id=data[CONF_NIF],
+                    )
+                    await self.hass.config_entries.async_reload(entry.entry_id)
+                    return self.async_abort(reason="reauth_successful")
 
         defaults = user_input or {CONF_NIF: entry.data[CONF_NIF]}
         return self.async_show_form(

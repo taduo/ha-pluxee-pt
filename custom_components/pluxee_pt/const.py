@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import timedelta
+import re
 
 DOMAIN = "pluxee_pt"
 NAME = "Pluxee Portugal"
@@ -26,6 +27,20 @@ UPDATE_INTERVAL_OPTION_LABELS = {
 PLATFORMS: list[str] = ["sensor"]
 
 SENSOR_KEY_AVAILABLE_BALANCE = "available_balance"
+_NIF_PATTERN = re.compile(r"\d{9}")
+
+
+def normalize_nif(value: object) -> str:
+    """Normalize a NIF value for storage and comparison."""
+    if not isinstance(value, str):
+        return ""
+
+    return value.strip()
+
+
+def is_valid_nif(value: object) -> bool:
+    """Return True when the provided NIF is exactly 9 digits."""
+    return bool(_NIF_PATTERN.fullmatch(normalize_nif(value)))
 
 
 def normalize_update_interval_minutes(value: object) -> int:
