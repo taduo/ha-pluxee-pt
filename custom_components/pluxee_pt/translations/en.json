@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Pluxee Portugal",
+        "description": "Enter the credentials you use in the Pluxee Portugal consumer portal.",
+        "data": {
+          "nif": "NIF",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect to Pluxee Portugal",
+        "description": "Update the credentials for {account}.",
+        "data": {
+          "nif": "NIF",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Pluxee portal.",
+      "cannot_parse": "Signed in successfully, but could not find the available balance on the page.",
+      "invalid_auth": "Invalid NIF or password.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This NIF is already configured.",
+      "reauth_successful": "Reauthentication was successful.",
+      "wrong_account": "Reauthentication must use the same NIF."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "available_balance": {
+        "name": "Available balance"
+      }
+    }
+  }
+}

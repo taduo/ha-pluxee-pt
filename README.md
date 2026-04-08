@@ -1,0 +1,90 @@
+# Pluxee Portugal for Home Assistant
+
+Unofficial Home Assistant custom integration for Pluxee Portugal. It logs in to the
+consumer portal, reads the available balance shown on the dashboard, and exposes
+that value as a Home Assistant sensor in EUR.
+
+This project is not affiliated with or endorsed by Pluxee.
+
+## Features
+
+- UI-based setup from `Settings > Devices & Services`
+- Stores your credentials in the Home Assistant config entry
+- Refreshes your balance every 30 minutes
+- Automatically retries with a fresh login when the session expires
+- Installs through HACS as a custom repository
+
+## Current Scope
+
+Version `0.1.0` focuses on one thing only:
+
+- available balance from the Portugal consumer portal
+
+Out of scope for now:
+
+- transactions or statement history
+- multiple balance types from one account
+- options flow
+- default HACS catalog submission
+
+## Installation
+
+### HACS custom repository
+
+1. Open HACS in Home Assistant.
+2. Go to `Integrations`.
+3. Open the three-dot menu and choose `Custom repositories`.
+4. Add `https://github.com/taduo/ha-pluxee-pt`.
+5. Choose category `Integration`.
+6. Search for `Pluxee Portugal` in HACS and install it.
+7. Restart Home Assistant.
+
+### Manual install
+
+1. Copy the `custom_components/pluxee_pt` folder into your Home Assistant
+   `custom_components` directory.
+2. Restart Home Assistant.
+
+## Configuration
+
+1. In Home Assistant, open `Settings > Devices & Services`.
+2. Click `Add Integration`.
+3. Search for `Pluxee Portugal`.
+4. Enter your `NIF` and `Password`.
+5. Finish the flow and wait for the first refresh.
+
+The integration will create one sensor per configured account:
+
+- `Available balance`
+
+## Notes About Login
+
+The current implementation is based on the live Portugal login flow observed on
+`2026-04-08`:
+
+- login page: `https://portal.admin.pluxee.pt/`
+- login endpoint: `https://portal.admin.pluxee.pt/login_processing.php`
+- request parameters: `nif` and `pass`
+
+If Pluxee adds CAPTCHA, mandatory one-time codes, or changes the post-login
+markup, the integration may need to be updated.
+
+## Local Validation
+
+From the repository root:
+
+```bash
+PYTHONPYCACHEPREFIX=.pycache python3 -m compileall custom_components tests
+```
+
+If you want to run the test suite later:
+
+```bash
+python3 -m pip install -r requirements_test.txt
+python3 -m pytest
+```
+
+## Legal
+
+Use this integration at your own risk. Balance data comes from the Pluxee web
+portal and can change if the site or authentication flow changes.

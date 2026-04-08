@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ligar ao Pluxee Portugal",
+        "description": "Introduza as credenciais que usa no portal de consumidores da Pluxee Portugal.",
+        "data": {
+          "nif": "NIF",
+          "password": "Palavra-passe"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Voltar a ligar ao Pluxee Portugal",
+        "description": "Atualize as credenciais de {account}.",
+        "data": {
+          "nif": "NIF",
+          "password": "Palavra-passe"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Falha ao ligar ao portal Pluxee.",
+      "cannot_parse": "O login funcionou, mas não foi possível encontrar o saldo disponível na página.",
+      "invalid_auth": "NIF ou palavra-passe inválidos.",
+      "unknown": "Erro inesperado."
+    },
+    "abort": {
+      "already_configured": "Este NIF já está configurado.",
+      "reauth_successful": "A reautenticação foi concluída com sucesso.",
+      "wrong_account": "A reautenticação tem de usar o mesmo NIF."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "available_balance": {
+        "name": "Saldo disponível"
+      }
+    }
+  }
+}
