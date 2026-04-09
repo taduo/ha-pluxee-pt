@@ -7,7 +7,6 @@ from typing import Any
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CURRENCY_EURO
@@ -67,7 +66,6 @@ class PluxeeAvailableBalanceSensor(PluxeeBaseEntity):
     _attr_icon = "mdi:wallet"
     _attr_native_unit_of_measurement = CURRENCY_EURO
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = SENSOR_KEY_AVAILABLE_BALANCE
 
     def __init__(
@@ -88,4 +86,7 @@ class PluxeeAvailableBalanceSensor(PluxeeBaseEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional metadata for the card."""
-        return build_balance_attributes(self.coordinator.data)
+        return build_balance_attributes(
+            self.coordinator.data,
+            getattr(self.coordinator, "last_update_success_time", None),
+        )

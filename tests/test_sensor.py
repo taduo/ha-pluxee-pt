@@ -1,5 +1,6 @@
 """Unit tests for the Pluxee Portugal sensor helpers."""
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from custom_components.pluxee_pt.client import PluxeeBalanceData, PluxeeTransaction
@@ -29,9 +30,13 @@ def test_build_balance_attributes_includes_recent_transactions() -> None:
         ),
     )
 
-    attributes = build_balance_attributes(data)
+    attributes = build_balance_attributes(
+        data,
+        datetime(2026, 4, 9, 10, 31, 47, tzinfo=timezone.utc),
+    )
 
     assert attributes["balance_text"] == "43,09"
+    assert attributes["last_refresh"] == "2026-04-09T10:31:47+00:00"
     assert attributes["recent_transactions_count"] == 2
     assert "source_url" not in attributes
     assert attributes["recent_transactions"] == [
