@@ -5,6 +5,7 @@ consumer portal, reads the available balance shown on the dashboard, and exposes
 that value as a Home Assistant sensor in EUR.
 
 This project is not affiliated with or endorsed by Pluxee.
+Build with codex assistance.
 
 ## Features
 
