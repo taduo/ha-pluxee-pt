@@ -8,7 +8,7 @@ import re
 
 DOMAIN = "pluxee_pt"
 NAME = "Pluxee Portugal"
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 
 CONF_NIF = "nif"
 CONF_UPDATE_INTERVAL_MINUTES = "update_interval_minutes"

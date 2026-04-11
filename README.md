@@ -6,6 +6,11 @@ that value as a Home Assistant sensor in EUR.
 
 This project is not affiliated with or endorsed by Pluxee.
 
+## Project Docs
+
+- [Security policy](SECURITY.md)
+- [Contributing guide](CONTRIBUTING.md)
+
 ## Features
 
 - UI-based setup from `Settings > Devices & Services`
@@ -18,7 +23,7 @@ This project is not affiliated with or endorsed by Pluxee.
 
 ## Current Scope
 
-Version `0.3.0` currently includes:
+Version `0.3.2` currently includes:
 
 - available balance from the Portugal consumer portal
 - last 5 card transactions as balance sensor attributes
@@ -27,7 +32,9 @@ Version `0.3.0` currently includes:
 Out of scope for now:
 
 - multiple balance types from one account
-- default HACS catalog submission
+
+Official HACS default listing is handled as a separate submission and review
+process by the HACS maintainers.
 
 ## Installation
 
