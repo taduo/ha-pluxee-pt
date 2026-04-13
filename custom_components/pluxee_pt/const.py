@@ -18,7 +18,7 @@ LOGIN_PROCESSING_URL = "https://portal.admin.pluxee.pt/login_processing.php"
 BALANCE_PAGE_URL = "https://consumidores.pluxee.pt/"
 
 REQUEST_TIMEOUT_SECONDS = 20
-DEFAULT_UPDATE_INTERVAL_MINUTES = 30
+DEFAULT_UPDATE_INTERVAL_MINUTES = 60
 UPDATE_INTERVAL_MINUTES_OPTIONS: tuple[int, ...] = (15, 30, 60, 120)
 UPDATE_INTERVAL_OPTION_LABELS = {
     str(minutes): f"{minutes} min" for minutes in UPDATE_INTERVAL_MINUTES_OPTIONS
