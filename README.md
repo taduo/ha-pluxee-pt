@@ -16,7 +16,7 @@ Build with codex assistance.
 
 - UI-based setup from `Settings > Devices & Services`
 - Stores your credentials in the Home Assistant config entry
-- Refreshes your balance on a configurable interval, with 30 minutes as the default
+- Refreshes your balance on a configurable interval, with 60 minutes as the default
 - Lets you change the refresh interval from the integration options
 - Automatically retries with a fresh login when the session expires
 - Adds the latest 5 card transactions as attributes on the balance sensor
@@ -24,7 +24,7 @@ Build with codex assistance.
 
 ## Current Scope
 
-Version `0.3.2` currently includes:
+Version `0.3.3` currently includes:
 
 - available balance from the Portugal consumer portal
 - last 5 card transactions as balance sensor attributes
