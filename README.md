@@ -24,7 +24,7 @@ Build with codex assistance.
 
 ## Current Scope
 
-Version `0.3.2` currently includes:
+Version `0.3.3` currently includes:
 
 - available balance from the Portugal consumer portal
 - last 5 card transactions as balance sensor attributes
