@@ -41,6 +41,8 @@ process by the HACS maintainers.
 
 ### HACS custom repository
 
+[![Open your Home Assistant instance and open this repository in the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=taduo&repository=ha-pluxee-pt&category=integration)
+
 1. Open HACS in Home Assistant.
 2. Go to `Integrations`.
 3. Open the three-dot menu and choose `Custom repositories`.
